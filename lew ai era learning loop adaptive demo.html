@@ -1,0 +1,344 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+<meta name="theme-color" content="#07101f" />
+<title>Lew — AI-Era Learning Loop Interactive Demo</title>
+<style>
+  :root{
+    --bg:#07101f; --panel:#0d1a2d; --panel2:#13243a; --text:#f5f7fb; --muted:#a9b7cc;
+    --line:#28425f; --gold:#f2b544; --blue:#57a8ff; --green:#44d17a; --red:#ff6b6b;
+  }
+  *{box-sizing:border-box}
+  html{-webkit-text-size-adjust:100%;text-size-adjust:100%}
+  body{margin:0;font-family:Inter,system-ui,-apple-system,Segoe UI,Roboto,sans-serif;background:
+  radial-gradient(circle at top right,#132d53 0,#07101f 42%,#050a12 100%);color:var(--text);overflow-wrap:break-word}
+  .wrap{max-width:1180px;margin:auto;padding:28px}
+  .hero{border:1px solid var(--line);background:linear-gradient(180deg,#0c1728,#091320);border-radius:20px;padding:28px;box-shadow:0 18px 50px rgba(0,0,0,.3)}
+  .eyebrow{color:var(--blue);font-weight:800;letter-spacing:.08em;text-transform:uppercase;font-size:.8rem}
+  h1{font-size:clamp(2rem,5vw,4.8rem);line-height:.95;margin:.5rem 0 1rem}
+  h1 span{color:var(--gold)}
+  .lead{font-size:1.15rem;color:#d8e2f1;max-width:900px}
+  .quote{margin-top:22px;padding:16px 18px;border-left:4px solid var(--gold);background:#101b2b;border-radius:10px;color:#f4e4bd}
+  .grid{display:grid;grid-template-columns:repeat(6,1fr);gap:10px;margin:26px 0}
+  .step{background:var(--panel2);border:1px solid var(--line);border-radius:14px;padding:14px;text-align:center}
+  .step b{display:block;color:var(--blue);font-size:.85rem;margin-bottom:6px}
+  .step.active{outline:2px solid var(--gold);transform:translateY(-2px)}
+  .stage{margin-top:22px;background:#081422;border:1px solid var(--line);border-radius:18px;padding:22px}
+  .question{font-size:1.35rem;font-weight:800;margin-bottom:16px}
+  .options{display:grid;gap:10px}
+  button.option,button.action{
+    width:100%;text-align:left;padding:14px 16px;border-radius:12px;border:1px solid #35516e;
+    background:#10243a;color:white;font-size:1rem;cursor:pointer;transition:.18s;
+    touch-action:manipulation;-webkit-tap-highlight-color:transparent
+  }
+  @media(hover:hover){
+    button.option:hover{background:#16314e}
+  }
+  button.option:active{background:#1a3a5c;transform:scale(.99)}
+  button.action:active{transform:scale(.98)}
+  button.option:focus-visible,button.action:focus-visible{outline:2px solid var(--blue);outline-offset:2px}
+  button.option.selected{border-color:var(--gold);box-shadow:0 0 0 2px rgba(242,181,68,.18);background:#16314e}
+  .actions{display:flex;gap:10px;margin-top:18px;flex-wrap:wrap}
+  button.action{width:auto;background:#12315a;font-weight:800;text-align:center}
+  button.action.primary{background:var(--gold);color:#1d1400;border-color:var(--gold)}
+  button.action.secondary{background:#17301f;border-color:#2f7d49}
+  .insight{margin-top:14px;padding:14px;border-radius:12px;background:#0f2034;color:#d9e8fb;display:none}
+  .nudge{
+    display:none;margin-top:12px;padding:12px 14px;border-radius:12px;
+    background:#2a1620;border:1px solid #6e3550;color:#ffd6de;font-weight:600
+  }
+  .nudge.show{display:block;animation:nudgeIn .25s ease}
+  @keyframes nudgeIn{from{opacity:0;transform:translateY(4px)}to{opacity:1;transform:translateY(0)}}
+  .score{display:grid;grid-template-columns:1fr 1fr;gap:18px;margin-top:22px}
+  .card{background:#0b1727;border:1px solid var(--line);border-radius:16px;padding:18px}
+  .big{font-size:3.6rem;font-weight:900;color:var(--green)}
+  .metric{display:flex;justify-content:space-between;padding:8px 0;border-bottom:1px solid #1e334b}
+  .metric:last-child{border-bottom:none}
+  .footer{margin-top:24px;text-align:center;color:#9fb0c4;font-size:.9rem}
+  textarea{width:100%;min-height:150px;border-radius:12px;padding:14px;background:#0d1d2e;color:white;border:1px solid #35516e;font:inherit;font-size:16px}
+  .hidden{display:none}
+  @media(prefers-reduced-motion:reduce){
+    *{transition:none!important;animation:none!important}
+  }
+  @media(max-width:900px){.grid{grid-template-columns:repeat(3,1fr)}.score{grid-template-columns:1fr}}
+  @media(max-width:600px){.grid{grid-template-columns:repeat(2,1fr)}.wrap{padding:14px}}
+
+  /* Adaptive mobile experience */
+  .mobile-progress{display:none}
+  @media(max-width:700px){
+    body{background:#07101f}
+    .wrap{padding:10px;padding-left:calc(10px + env(safe-area-inset-left));padding-right:calc(10px + env(safe-area-inset-right))}
+    .hero{padding:14px;border-radius:14px}
+    .eyebrow{text-align:center;font-size:.72rem}
+    h1{font-size:2.05rem;line-height:1.02;text-align:center;margin:.55rem 0 .8rem}
+    .lead{font-size:1rem;line-height:1.5;text-align:left}
+    .quote{font-size:.95rem;line-height:1.5;padding:13px 14px}
+
+    /* Hide desktop six-column navigation and replace it with mobile progress */
+    #steps{display:none}
+    .mobile-progress{
+      display:block;
+      position:sticky;
+      top:0;
+      z-index:30;
+      margin:18px -4px 14px;
+      background:#0b1727;
+      border:1px solid var(--line);
+      border-radius:14px;
+      padding:12px 14px;
+      box-shadow:0 8px 24px rgba(0,0,0,.35)
+    }
+    .mobile-progress-top{
+      display:flex;justify-content:space-between;align-items:center;gap:10px;
+      font-size:.82rem;color:var(--muted);margin-bottom:9px
+    }
+    .mobile-progress-top b{color:var(--gold);font-size:.9rem}
+    .mobile-bar{height:8px;background:#14263a;border-radius:999px;overflow:hidden}
+    .mobile-bar-fill{height:100%;width:16.66%;background:linear-gradient(90deg,var(--blue),var(--green));transition:.25s}
+
+    .stage{padding:16px;margin-top:12px;border-radius:14px}
+    .question{font-size:1.2rem;line-height:1.35;margin-bottom:14px}
+    .options{gap:10px}
+    button.option{
+      min-height:54px;
+      padding:15px 14px;
+      font-size:1rem;
+      line-height:1.35;
+      border-radius:14px
+    }
+    .actions{
+      position:sticky;
+      bottom:0;
+      z-index:20;
+      background:linear-gradient(180deg,rgba(8,20,34,0),#081422 28%);
+      margin:18px -4px -4px;
+      padding:26px 4px calc(4px + env(safe-area-inset-bottom));
+      display:grid;
+      grid-template-columns:1fr;
+      gap:9px
+    }
+    button.action{
+      width:100%;
+      min-height:50px;
+      text-align:center;
+      font-size:1rem
+    }
+    #ai{order:2}
+    #restart{order:3}
+    #next{order:1}
+
+    .score{grid-template-columns:1fr;margin-top:16px}
+    .card{padding:15px}
+    .big{font-size:3rem}
+    .metric{font-size:.92rem;gap:12px}
+    .footer{font-size:.82rem;line-height:1.5;padding:0 8px calc(16px + env(safe-area-inset-bottom))}
+    textarea{min-height:180px}
+  }
+
+</style>
+</head>
+<body>
+<div class="wrap">
+  <section class="hero">
+    <div class="eyebrow">Lew, you said it. Let’s build it.</div>
+    <h1>Rethink the assignment.<br><span>Redefine mastery.</span></h1>
+    <p class="lead">
+      If AI can produce the answer, the assignment should test something more valuable:
+      Can the learner frame the problem, interrogate evidence, challenge assumptions,
+      make a sound decision, and defend it?
+    </p>
+    <div class="quote"><b>The shift:</b> AI is not the enemy of learning. It becomes a force multiplier inside a stronger thinking process.</div>
+
+    <div class="mobile-progress" id="mobileProgress">
+      <div class="mobile-progress-top">
+        <span id="mobileStageLabel">Step 1 of 6</span>
+        <b id="mobileStageName">ASK</b>
+      </div>
+      <div class="mobile-bar"><div class="mobile-bar-fill" id="mobileBarFill"></div></div>
+    </div>
+
+<div class="grid" id="steps">
+      <div class="step active"><b>01 ASK</b>Better questions</div>
+      <div class="step"><b>02 INVESTIGATE</b>Relevant evidence</div>
+      <div class="step"><b>03 INTERROGATE</b>Challenge assumptions</div>
+      <div class="step"><b>04 SYNTHESIZE</b>Make sense of it</div>
+      <div class="step"><b>05 DECIDE</b>Own the choice</div>
+      <div class="step"><b>06 DEFEND</b>Explain the reasoning</div>
+    </div>
+
+    <div class="stage" id="stage">
+      <div id="screen"></div>
+      <div class="nudge" id="nudge">Choose an option first, then continue.</div>
+      <div class="actions">
+        <button class="action primary" id="next">Continue</button>
+        <button class="action secondary" id="ai">Ask AI for a challenge</button>
+        <button class="action" id="restart">Start over</button>
+      </div>
+      <div class="insight" id="insight"></div>
+    </div>
+
+    <div class="score hidden" id="score">
+      <div class="card">
+        <div class="eyebrow">Thinking score</div>
+        <div class="big" id="scoreNum">92%</div>
+        <div id="rating">Strong Thinker</div>
+      </div>
+      <div class="card">
+        <div class="metric"><span>Question quality</span><b>★★★★★</b></div>
+        <div class="metric"><span>Evidence use</span><b>★★★★☆</b></div>
+        <div class="metric"><span>Assumption challenge</span><b>★★★★☆</b></div>
+        <div class="metric"><span>Decision quality</span><b>★★★★★</b></div>
+        <div class="metric"><span>Defense strength</span><b>★★★★★</b></div>
+      </div>
+    </div>
+  </section>
+
+  <div class="footer">
+    “In the era of AI, the advantage won’t go to those who get answers faster — it will go to those who make better decisions.”
+  </div>
+</div>
+
+<script>
+const stages = [
+{
+q:"Your city has $50M to reduce traffic congestion and emissions. What is the most important question to ask first?",
+o:["How quickly can we build something?","What outcomes matter most, for whom, and over what time horizon?","Which solution is most popular?","How can we spend the entire budget?"],
+ai:"AI challenge: Are you framing a transportation problem, an emissions problem, an equity problem, or all three? Your definition determines what counts as success."
+},
+{
+q:"Which evidence would you prioritize before choosing a solution?",
+o:["Traffic-flow and emissions data","Resident travel-pattern surveys","Budget and implementation constraints","All of the above — plus evidence on who benefits and who bears the cost"],
+ai:"AI challenge: More data is not automatically better. Which evidence is decision-relevant, current, and trustworthy enough to change your choice?"
+},
+{
+q:"Which assumption deserves the hardest challenge?",
+o:["More road capacity will always reduce congestion","People will never change travel behavior","Public transit is always cheaper","Technology alone will solve the problem"],
+ai:"AI challenge: Ask what would have to be true for each option to fail. Strong decisions survive contact with disconfirming evidence."
+},
+{
+q:"Now synthesize. Which conclusion best fits the evidence and uncertainty?",
+o:["Choose the cheapest option","Choose the fastest option","Use a mixed strategy that addresses root causes, incentives, infrastructure, and measurable outcomes","Copy another city exactly"],
+ai:"AI challenge: Synthesis is not averaging opinions. It means producing a coherent judgment from incomplete and sometimes conflicting evidence."
+},
+{
+q:"Make the decision.",
+o:["Build more highways","Expand parking","Invest in public transit, targeted traffic optimization, and behavior incentives","Do nothing for now"],
+ai:"AI challenge: A defensible decision should name the tradeoff. What are you choosing not to optimize for — and why?"
+},
+{
+q:"Defend your decision.",
+aiDefense:true,
+ai:"AI challenge: A strong defense should explain evidence, tradeoffs, uncertainty, affected stakeholders, and what result would cause the decision to be revisited."
+}];
+
+let idx=0, answers=[];
+const screen=document.getElementById("screen"), insight=document.getElementById("insight");
+const next=document.getElementById("next"), ai=document.getElementById("ai"), restart=document.getElementById("restart");
+const nudge=document.getElementById("nudge"), stageEl=document.getElementById("stage");
+
+function hideNudge(){ nudge.classList.remove("show"); }
+
+function scrollToStage(){
+  // On phones the sticky action bar sits at the bottom; bring the new question into view.
+  try{
+    const top = stageEl.getBoundingClientRect().top + window.pageYOffset - 70;
+    window.scrollTo({top: Math.max(top,0), behavior:"smooth"});
+  }catch(e){
+    stageEl.scrollIntoView();
+  }
+}
+
+function bindOptions(){
+  document.querySelectorAll(".option").forEach(btn=>btn.onclick=()=>{
+    document.querySelectorAll(".option").forEach(b=>b.classList.remove("selected"));
+    btn.classList.add("selected"); answers[idx]=Number(btn.dataset.i);
+    hideNudge();
+  });
+}
+
+function render(){
+  document.querySelectorAll(".step").forEach((e,i)=>e.classList.toggle("active",i===idx));
+  const mobileLabels=["ASK","INVESTIGATE","INTERROGATE","SYNTHESIZE","DECIDE","DEFEND"];
+  const msLabel=document.getElementById("mobileStageLabel");
+  const msName=document.getElementById("mobileStageName");
+  const msFill=document.getElementById("mobileBarFill");
+  if(msLabel) msLabel.textContent=`Step ${idx+1} of ${stages.length}`;
+  if(msName) msName.textContent=mobileLabels[idx] || "";
+  if(msFill) msFill.style.width=`${((idx+1)/stages.length)*100}%`;
+  insight.style.display="none";
+  hideNudge();
+  const s=stages[idx];
+  if(s.aiDefense){
+    const choice = answers[4] !== undefined ? stages[4].o[answers[4]] : "the selected option";
+    screen.innerHTML=`<div class="question">${s.q}</div>
+    <div class="quote"><b>AI-generated defense:</b></div>
+    <div class="card" id="defenseBox" style="margin-top:12px;line-height:1.65">
+      I recommend <b>${choice}</b> because it best balances congestion reduction, emissions impact, implementation practicality, and long-term public value. The evidence suggests that a single-solution approach would be too narrow, while a coordinated strategy is more likely to address both immediate traffic pressure and the underlying behavior and infrastructure patterns that create it. This decision also recognizes tradeoffs: it may require more coordination and could take longer to implement than a single construction project, but it creates a stronger path to measurable, sustainable improvement. The city should define clear success metrics and be prepared to adjust the strategy if the expected reductions in congestion, emissions, or public benefit do not materialize.
+    </div>
+    <div class="insight" style="display:block;margin-top:14px">
+      <b>Your job is not to write the paragraph.</b> Your job is to evaluate whether the AI defense is accurate, complete, and defensible.
+    </div>
+    <div class="options" style="margin-top:14px">
+      <button class="option" data-i="0">Approve the AI defense as written</button>
+      <button class="option" data-i="1">Revise it — the reasoning is incomplete</button>
+      <button class="option" data-i="2">Reject it — the AI misrepresented my decision</button>
+    </div>`;
+    bindOptions();
+  } else {
+    screen.innerHTML=`<div class="question">${s.q}</div><div class="options">${s.o.map((x,i)=>`<button class="option" data-i="${i}">${x}</button>`).join("")}</div>`;
+    bindOptions();
+  }
+  next.textContent = idx===stages.length-1 ? "View my thinking report" : "Continue";
+}
+
+ai.onclick=()=>{
+  insight.textContent=stages[idx].ai;
+  insight.style.display="block";
+  // The insight renders below the sticky action bar on phones; make sure it is seen.
+  if(window.matchMedia("(max-width:700px)").matches){
+    setTimeout(()=>{ try{ insight.scrollIntoView({behavior:"smooth",block:"center"}); }catch(e){ insight.scrollIntoView(); } },50);
+  }
+};
+
+next.onclick=()=>{
+  if(answers[idx]===undefined){
+    nudge.classList.add("show");
+    try{ nudge.scrollIntoView({behavior:"smooth",block:"center"}); }catch(e){}
+    return;
+  }
+
+  if(idx<stages.length-1){ idx++; render(); scrollToStage(); }
+  else{
+    const preferred=[1,3,0,2,2];
+    let hits=0; for(let i=0;i<5;i++) if(answers[i]===preferred[i]) hits++;
+    const defenseJudgmentBonus = answers[5]===1 ? 6 : answers[5]===0 ? 4 : 3;
+    let score=Math.min(98,72 + hits*4 + defenseJudgmentBonus);
+    document.getElementById("scoreNum").textContent=score+"%";
+    document.getElementById("rating").textContent=score>=90?"Strong Thinker":score>=82?"Developing Judgment":"Keep Interrogating";
+    document.getElementById("score").classList.remove("hidden");
+    screen.innerHTML=`<div class="question">You weren’t graded on whether you found “the answer.” You were evaluated on the quality of your thinking — including whether you could judge the AI-generated defense.</div>
+    <div class="quote"><b>Mastery:</b> Ask better questions. Use evidence wisely. Challenge assumptions. Make sound decisions. Evaluate AI reasoning. Own the outcome.</div>`;
+    next.style.display="none"; ai.style.display="none";
+    document.querySelectorAll(".step").forEach(e=>e.classList.remove("active"));
+    const msLabel=document.getElementById("mobileStageLabel");
+    const msName=document.getElementById("mobileStageName");
+    const msFill=document.getElementById("mobileBarFill");
+    if(msLabel) msLabel.textContent="Complete";
+    if(msName) msName.textContent="REPORT";
+    if(msFill) msFill.style.width="100%";
+    scrollToStage();
+  }
+};
+
+restart.onclick=()=>{
+  idx=0; answers=[]; next.style.display=""; ai.style.display="";
+  document.getElementById("score").classList.add("hidden");
+  render();
+  scrollToStage();
+};
+render();
+</script>
+</body>
+</html>
